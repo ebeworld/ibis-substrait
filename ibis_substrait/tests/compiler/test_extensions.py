@@ -1,6 +1,7 @@
 import operator
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import pytest
 
@@ -275,6 +276,25 @@ def test_extension_boolean(compiler, left, right, bin_op, exp_func, exp_uri):
 
     assert exp_uri in uris
 
+def test_bolt_udf_compile(compiler):
+    from ibis.legacy.udf.vectorized import bolt_gpu_udf
+    from ibis.legacy.udf.vectorized import bolt_cpu_udf
+    from google.protobuf import json_format
+
+    @bolt_gpu_udf(input_type=[dt.double], output_type=dt.double)
+    def add_one(s):
+        return s + 1
+
+    @bolt_cpu_udf(input_type=[dt.double], output_type=dt.double)
+    def minus_one(s):
+        return s + 1
+
+    t = ibis.table([("a", "int")], name="t")
+    query = t.mutate(b=add_one(t.a), c=minus_one(t.a))
+
+    plan = compiler.compile(query)
+    plan_json = json_format.MessageToJson(plan)
+    print(plan_json)
 
 def test_extension_udf_compile(compiler):
     try:

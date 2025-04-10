@@ -1351,6 +1351,78 @@ def _floor_ceil_cast(
         )
     )
 
+@translate.register(ops.bolt_udf.BoltGpuUdf)
+def _bolt_gpu_udf(
+    op: ops.ElementWiseVectorizedUDF,
+    *,
+    compiler: SubstraitCompiler,
+    **kwargs: Any,
+) -> stalg.Expression:
+    # For referring to scalar function within plan use "{op_name}_{udf_name}"
+    # since op_name alone will collide with >1 UDF
+    udf_key = f"gpu_{type(op).__name__}_{op.func.__name__}"
+
+    # Explicitly register extension uri
+    extension_uri = compiler.register_extension_uri("bolt_gpu_functions")
+
+    # Explicitly register extension function
+    try:
+        func_ext = compiler.function_extensions[udf_key]
+    except KeyError:
+        func_ext = compiler.function_extensions[udf_key] = (
+            compiler.create_extension_function(extension_uri, op.func.__name__)
+        )
+
+    return stalg.Expression(
+        scalar_function=stalg.Expression.ScalarFunction(
+            function_reference=func_ext.function_anchor,
+            output_type=translate(op.return_type),
+            arguments=[
+                stalg.FunctionArgument(
+                    value=translate(arg, compiler=compiler, **kwargs)
+                )
+                for arg in op.func_args
+                if isinstance(arg, ops.Value)
+            ],
+        )
+    )
+
+@translate.register(ops.bolt_udf.BoltCpuUdf)
+def _bolt_cpu_udf(
+    op: ops.ElementWiseVectorizedUDF,
+    *,
+    compiler: SubstraitCompiler,
+    **kwargs: Any,
+) -> stalg.Expression:
+    # For referring to scalar function within plan use "{op_name}_{udf_name}"
+    # since op_name alone will collide with >1 UDF
+    udf_key = f"cpu_{type(op).__name__}_{op.func.__name__}"
+
+    # Explicitly register extension uri
+    extension_uri = compiler.register_extension_uri("bolt_cpu_functions")
+
+    # Explicitly register extension function
+    try:
+        func_ext = compiler.function_extensions[udf_key]
+    except KeyError:
+        func_ext = compiler.function_extensions[udf_key] = (
+            compiler.create_extension_function(extension_uri, op.func.__name__)
+        )
+
+    return stalg.Expression(
+        scalar_function=stalg.Expression.ScalarFunction(
+            function_reference=func_ext.function_anchor,
+            output_type=translate(op.return_type),
+            arguments=[
+                stalg.FunctionArgument(
+                    value=translate(arg, compiler=compiler, **kwargs)
+                )
+                for arg in op.func_args
+                if isinstance(arg, ops.Value)
+            ],
+        )
+    )
+
 
 @translate.register(ops.ElementWiseVectorizedUDF)
 def _elementwise_udf(

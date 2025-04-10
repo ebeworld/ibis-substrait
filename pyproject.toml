@@ -20,7 +20,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-ibis-framework = ">=9,<10"
+ibis-framework = { path = "../ibis", develop = true }
 packaging = ">=21.3"
 pyyaml = ">=5"
 substrait = ">=0.23.0"
@@ -29,6 +29,7 @@ substrait = ">=0.23.0"
 ipython = ">=8.2.0"
 ruff = ">=0.0.252"
 setuptools = ">=67.0.0"
+datafusion = "^41.0.0"
 
 [tool.poetry.group.types.dependencies]
 mypy = "^1.3"
