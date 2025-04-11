@@ -1353,7 +1353,7 @@ def _floor_ceil_cast(
 
 @translate.register(ops.bolt_udf.BoltGpuUdf)
 def _bolt_gpu_udf(
-    op: ops.ElementWiseVectorizedUDF,
+    op: ops.BoltGpuUdf,
     *,
     compiler: SubstraitCompiler,
     **kwargs: Any,
@@ -1377,6 +1377,11 @@ def _bolt_gpu_udf(
         scalar_function=stalg.Expression.ScalarFunction(
             function_reference=func_ext.function_anchor,
             output_type=translate(op.return_type),
+            options = [
+                stalg.FunctionOption(
+                    name="device", preference=["GPU"]
+                )
+            ],
             arguments=[
                 stalg.FunctionArgument(
                     value=translate(arg, compiler=compiler, **kwargs)
@@ -1389,7 +1394,7 @@ def _bolt_gpu_udf(
 
 @translate.register(ops.bolt_udf.BoltCpuUdf)
 def _bolt_cpu_udf(
-    op: ops.ElementWiseVectorizedUDF,
+    op: ops.BoltCpuUdf,
     *,
     compiler: SubstraitCompiler,
     **kwargs: Any,
@@ -1413,6 +1418,11 @@ def _bolt_cpu_udf(
         scalar_function=stalg.Expression.ScalarFunction(
             function_reference=func_ext.function_anchor,
             output_type=translate(op.return_type),
+            options=[
+                stalg.FunctionOption(
+                    name="device", preference=["CPU"]
+                )
+            ],
             arguments=[
                 stalg.FunctionArgument(
                     value=translate(arg, compiler=compiler, **kwargs)
